@@ -55,17 +55,13 @@ def test_agregar_producto_y_verificar_carrito(driver):
     assert item_name != ""
 
 # fallo provocado con intencion de mostrar que al fallar se va a tomar captura   
-def test_login_invalido_muestra_error(driver):
+def test_login_invalido_muestra_error(driver, request):
     """Intentar login con credenciales incorrectas y validar mensaje de error."""
+    # Setear nombre personalizado para la captura
+    request.node.nombre_captura = "fallo_forzado"
     driver.get("https://www.saucedemo.com")
-
-    # Ingresar usuario y contraseña inválidos
     driver.find_element(By.ID, "user-name").send_keys("usuario_invalido")
     driver.find_element(By.ID, "password").send_keys("clave_invalida")
     driver.find_element(By.ID, "login-button").click()
-
-    # Buscar el mensaje de error
     error_msg = esperar_elemento_visible(driver, By.XPATH, "//h3[@data-test='error']", timeout=5).text
-
-    # Validar que el mensaje contiene "Epic sadface"
     assert "Epic sadface" in error_msg, f"El mensaje esperado no apareció. Se obtuvo: {error_msg}"

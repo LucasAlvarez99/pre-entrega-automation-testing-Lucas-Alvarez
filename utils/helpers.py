@@ -24,15 +24,20 @@ def esperar_clickable(driver, by, locator, timeout=10):
     )
 
 def tomar_captura(driver, nombre_archivo):
-    """Toma captura de pantalla y guarda en carpeta screenshots con timestamp"""
-    # Crear carpeta si no existe
-    if not os.path.exists("screenshots"):
-        os.makedirs("screenshots")
-
-    # Agregar timestamp para nombres únicos
-    timestamp = time.strftime("%Y%m%d-%H%M%S")
-    path = os.path.join("screenshots", f"{timestamp}-{nombre_archivo}.png")
-
-    driver.save_screenshot(path)
-    print(f"📸 Screenshot guardado en: {path}")
-    return path
+    """Guarda una captura en la carpeta 'screenshots' dentro del proyecto"""
+    try:
+        carpeta = "screenshots"
+        if not os.path.exists(carpeta):
+            os.makedirs(carpeta)
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        path = os.path.join(carpeta, f"{timestamp}-{nombre_archivo}.png")
+        resultado = driver.save_screenshot(path)
+        if resultado:
+            print(f"✅ Screenshot guardado correctamente: {path}")
+            return path
+        else:
+            print(f"⚠️ Selenium no pudo guardar el screenshot (resultado=False)")
+            return None
+    except Exception as e:
+        print(f"❌ Error al tomar captura: {e}")
+        return None
