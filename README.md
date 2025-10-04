@@ -1,16 +1,26 @@
-# Pre-Entrega Automation Testing - [Nombre Apellido]
+# pre-entrega-automation-testing-[Nombre-Apellido]
 
-## Propósito del proyecto
-Automatizar flujos básicos de navegación web en [saucedemo.com](https://www.saucedemo.com) utilizando Selenium WebDriver y Python, aplicando conocimientos adquiridos hasta la Clase 8 del curso.
+## Propósito
+Automatizar flujos básicos en https://www.saucedemo.com usando Selenium WebDriver y Pytest,
+cumpliendo con las consignas de la pre-entrega (login, ver catálogo y agregar producto al carrito).
 
-## Tecnologías utilizadas
-- Python 3.x
-- Selenium WebDriver
-- Pytest
-- Git y GitHub
-- HTML Reports (pytest-html)
+## Estructura
+- `tests/` -> tests de pytest
+- `utils/` -> helpers (esperas y captura de pantalla)
+- `conftest.py` -> fixture de WebDriver y hook para screenshots
+- `reports/` -> reportes HTML
+- `screenshots/` -> capturas automáticas al fallar
 
-## Instalación de dependencias
-1. Clonar el repositorio:
+## Requisitos
+- Python 3.8+ (probado con 3.13)
+- Tener Brave o Chrome instalados. Para Brave, el script intenta detectar binario automáticamente.
+- Git para versionado.
+
+## Instalación
+1. Crear y activar entorno virtual:
 ```bash
-git clone https://github.com/usuario/pre-entrega-automation-testing-Lucas-Alvarez.git
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# Linux/macOS
+source venv/bin/activate

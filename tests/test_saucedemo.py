@@ -1,81 +1,71 @@
 import pytest
-from selenium import webdriver
 from selenium.webdriver.common.by import By
-from utils.helpers import esperar_elemento, tomar_captura
+from utils.helpers import esperar_elemento_visible, esperar_clickable, tomar_captura
 
 URL = "https://www.saucedemo.com"
-USUARIO = "standard_user"
-PASSWORD = "secret_sauce"
+USER = "standard_user"
+PASS = "secret_sauce"
 
-@pytest.fixture
-def driver():
-    driver = webdriver.Chrome()  # Asegurarse de tener chromedriver en PATH
-    driver.maximize_window()
-    yield driver
-    driver.quit()
-
-def test_login(driver):
+def login(driver, username=USER, password=PASS):
     driver.get(URL)
-    try:
-        # Login
-        esperar_elemento(driver, By.ID, "user-name").send_keys(USUARIO)
-        esperar_elemento(driver, By.ID, "password").send_keys(PASSWORD)
-        esperar_elemento(driver, By.ID, "login-button").click()
+    esperar_elemento_visible(driver, By.ID, "user-name").clear()
+    driver.find_element(By.ID, "user-name").send_keys(username)
+    esperar_elemento_visible(driver, By.ID, "password").clear()
+    driver.find_element(By.ID, "password").send_keys(password)
+    esperar_clickable(driver, By.ID, "login-button").click()
 
-        # Validar redirección
-        titulo = esperar_elemento(driver, By.CLASS_NAME, "title").text
-        assert titulo == "Products", "Login fallido o página de inventario incorrecta"
+def test_login_redireccion_inventory(driver):
+    """Automatización de Login y validación de redirección a /inventory.html y título."""
+    login(driver)
+    # validar que llegamos a inventory y el título sea "Products"
+    titulo = esperar_elemento_visible(driver, By.CLASS_NAME, "title", timeout=10).text
+    assert "Products" in titulo, f"Título esperado 'Products' pero se encontró '{titulo}'"
+    assert "/inventory.html" in driver.current_url or "inventory" in driver.current_url
 
-    except Exception as e:
-        tomar_captura(driver, "login_error")
-        raise e
+def test_catalogo_y_elementos_basicos(driver):
+    """Verificar título, existencia de productos y listar nombre/precio del primero."""
+    login(driver)
+    titulo = esperar_elemento_visible(driver, By.CLASS_NAME, "title", timeout=10).text
+    assert titulo == "Products"
+    # comprobar que hay al menos un producto visible
+    primer_nombre = esperar_elemento_visible(driver, By.CLASS_NAME, "inventory_item_name", timeout=10).text
+    primer_precio = esperar_elemento_visible(driver, By.CLASS_NAME, "inventory_item_price", timeout=10).text
+    assert primer_nombre != ""
+    assert primer_precio.startswith("$")
+    # verificar presencia de elementos importantes (menu de la izquierda/burger y filtros)
+    assert driver.find_element(By.CLASS_NAME, "bm-burger-button").is_displayed()
+    assert driver.find_element(By.CLASS_NAME, "product_sort_container").is_displayed()
+    # imprimir en consola para evidencia
+    print(f"Producto 1 -> {primer_nombre} - {primer_precio}")
 
-def test_navegacion_catalogo(driver):
-    driver.get(URL)
-    # Login previo
-    esperar_elemento(driver, By.ID, "user-name").send_keys(USUARIO)
-    esperar_elemento(driver, By.ID, "password").send_keys(PASSWORD)
-    esperar_elemento(driver, By.ID, "login-button").click()
+def test_agregar_producto_y_verificar_carrito(driver):
+    """Agregar el primer producto al carrito, verificar contador y ver en carrito."""
+    login(driver)
+    # agregar primer producto (botón 'Add to cart')
+    boton_add = esperar_clickable(driver, By.CLASS_NAME, "btn_inventory", timeout=10)
+    boton_add.click()
 
-    try:
-        # Validar título
-        titulo = esperar_elemento(driver, By.CLASS_NAME, "title").text
-        assert titulo == "Products"
+    # verificar contador del carrito
+    cart_badge = esperar_elemento_visible(driver, By.CLASS_NAME, "shopping_cart_badge", timeout=5)
+    assert cart_badge.text == "1", f"Contador del carrito esperado '1' pero fue '{cart_badge.text}'"
 
-        # Validar presencia de productos
-        primer_producto = esperar_elemento(driver, By.CLASS_NAME, "inventory_item_name")
-        precio_producto = esperar_elemento(driver, By.CLASS_NAME, "inventory_item_price")
-        print(f"Primer producto: {primer_producto.text} - Precio: {precio_producto.text}")
+    # navegar al carrito y verificar item
+    driver.find_element(By.CLASS_NAME, "shopping_cart_link").click()
+    item_name = esperar_elemento_visible(driver, By.CLASS_NAME, "inventory_item_name", timeout=10).text
+    assert item_name != ""
 
-        # Validar elementos importantes (ej. menú de filtros)
-        menu = esperar_elemento(driver, By.CLASS_NAME, "bm-burger-button")
-        assert menu.is_displayed()
+# fallo provocado con intencion de mostrar que al fallar se va a tomar captura   
+def test_login_invalido_muestra_error(driver):
+    """Intentar login con credenciales incorrectas y validar mensaje de error."""
+    driver.get("https://www.saucedemo.com")
 
-    except Exception as e:
-        tomar_captura(driver, "catalogo_error")
-        raise e
+    # Ingresar usuario y contraseña inválidos
+    driver.find_element(By.ID, "user-name").send_keys("usuario_invalido")
+    driver.find_element(By.ID, "password").send_keys("clave_invalida")
+    driver.find_element(By.ID, "login-button").click()
 
-def test_carrito(driver):
-    driver.get(URL)
-    # Login previo
-    esperar_elemento(driver, By.ID, "user-name").send_keys(USUARIO)
-    esperar_elemento(driver, By.ID, "password").send_keys(PASSWORD)
-    esperar_elemento(driver, By.ID, "login-button").click()
+    # Buscar el mensaje de error
+    error_msg = esperar_elemento_visible(driver, By.XPATH, "//h3[@data-test='error']", timeout=5).text
 
-    try:
-        # Añadir primer producto al carrito
-        boton_add = esperar_elemento(driver, By.CLASS_NAME, "btn_inventory")
-        boton_add.click()
-
-        # Verificar contador del carrito
-        contador = esperar_elemento(driver, By.CLASS_NAME, "shopping_cart_badge")
-        assert contador.text == "1"
-
-        # Navegar al carrito
-        esperar_elemento(driver, By.CLASS_NAME, "shopping_cart_link").click()
-        producto_carrito = esperar_elemento(driver, By.CLASS_NAME, "inventory_item_name")
-        assert producto_carrito.is_displayed()
-
-    except Exception as e:
-        tomar_captura(driver, "carrito_error")
-        raise e
+    # Validar que el mensaje contiene "Epic sadface"
+    assert "Epic sadface" in error_msg, f"El mensaje esperado no apareció. Se obtuvo: {error_msg}"

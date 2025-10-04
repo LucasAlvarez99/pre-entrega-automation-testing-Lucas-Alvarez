@@ -1,1 +1,1 @@
-from .helpers import esperar_elemento, tomar_captura
+from .helpers import esperar_elemento_visible, tomar_captura
